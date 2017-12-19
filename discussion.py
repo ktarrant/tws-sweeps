@@ -2,6 +2,8 @@ import re
 import logging
 from collections import OrderedDict
 
+import pandas as pd
+
 log = logging.getLogger(__name__)
 
 month_options = [
@@ -35,7 +37,6 @@ def parse_comment_content(content):
     """
     statements = re.split(r",|;|\(|\)|" + "\n", content)
     for statement in statements:
-        log.debug("[Processing Statement] {}".format(statement))
         sweep_elements_matches = sweep_elements_re.findall(statement)
 
         entry = {}
@@ -46,7 +47,7 @@ def parse_comment_content(content):
 
                 s_key = re_key.split("_")[0]
                 if s_key in entry:
-                    log.error("Throwing away match: ({key}, {value})".format(key=s_key, value=value))
+                    log.debug("Throwing away match: ({key}, {value})".format(key=s_key, value=value))
                 else:
                     if s_key == "strike":
                         entry[s_key] = float(value)
@@ -62,16 +63,16 @@ def parse_comment_content(content):
                             entry[s_key] = "Weekly"
                         else:
                             entry[s_key] = value
+                    elif s_key == "ticker":
+                        entry[s_key] = value.upper()
                     else:
                         entry[s_key] = value
 
-        yield entry
-
+        if all([k in entry for k in ["ticker", "expiration", "strike", "option"]]):
+            yield entry
 
 def parse_comments(submission):
+    """ Compile a DataFrame from the sweeps found in the discussion """
     submission.comments.replace_more(limit=None)
-    for comment in submission.comments.list():
-        for combined_result in parse_comment_content(comment.body):
-            if all([k in combined_result for k in ["ticker", "expiration", "num"]]):
-                log.info("[Found Sweep] {}".format(combined_result))
-                yield combined_result
+    df = pd.DataFrame(entry for comment in submission.comments.list() for entry in parse_comment_content(comment.body))
+    return df

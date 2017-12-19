@@ -63,5 +63,5 @@ def test_statement_examples(statement, expected_result):
         check_statement_result(entry, expected_entry)
 
 def test_sample_discussion_parse_comments(sample_discussion):
-    result = list(parse_comments(sample_discussion))
+    result = parse_comments(sample_discussion)
     log.info(result)
