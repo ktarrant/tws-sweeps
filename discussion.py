@@ -48,7 +48,10 @@ def parse_comment_content(content):
 
                 s_key = re_key.split("_")[0]
                 if s_key in entry:
-                    log.debug("Throwing away match: ({key}, {value})".format(key=s_key, value=value))
+                    if s_key == "ticker" and len(value) > 1 and value.upper() == value:
+                        entry[s_key] = value
+                    else:
+                        log.debug("Throwing away match: ({key}, {value})".format(key=s_key, value=value))
                 else:
                     if s_key == "strike":
                         entry[s_key] = float(value)
