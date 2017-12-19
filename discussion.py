@@ -29,8 +29,9 @@ sweep_elements_re = re.compile("|".join(["(" + sweep_elements[key][0] + ")" for 
 
 def parse_comment_content(content):
     """
+    Parse the given string for mentions of spreads. Yield any spreads
     :param content: str
-    :yield: OrderedDict's each representing a statement in the comment
+    :yield: dict's each representing a statement in the comment
     """
     statements = re.split(r",|;|\(|\)|" + "\n", content)
     for statement in statements:
@@ -44,7 +45,25 @@ def parse_comment_content(content):
                     continue
 
                 s_key = re_key.split("_")[0]
-                entry[s_key] = value
+                if s_key in entry:
+                    log.error("Throwing away match: ({key}, {value})".format(key=s_key, value=value))
+                else:
+                    if s_key == "strike":
+                        entry[s_key] = float(value)
+                    elif s_key == "option":
+                        if value.lower().startswith("c"):
+                            entry[s_key] = "call"
+                        elif value.lower().startswith("p"):
+                            entry[s_key] = "put"
+                        else:
+                            log.error("Invalid option type matched: {}".format(value))
+                    elif s_key == "expiration":
+                        if value.lower().startswith("week"):
+                            entry[s_key] = "Weekly"
+                        else:
+                            entry[s_key] = value
+                    else:
+                        entry[s_key] = value
 
         yield entry
 
