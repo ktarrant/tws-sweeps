@@ -1,5 +1,6 @@
 import re
 import logging
+import datetime
 from collections import OrderedDict
 
 import pandas as pd
@@ -71,8 +72,16 @@ def parse_comment_content(content):
         if all([k in entry for k in ["ticker", "expiration", "strike", "option"]]):
             yield entry
 
+def _make_entry(comment, entry):
+    entry["comment"] = comment.permalink
+    entry["timestamp"] = datetime.datetime.fromtimestamp(comment.created)
+    return entry
+
 def parse_comments(submission):
     """ Compile a DataFrame from the sweeps found in the discussion """
     submission.comments.replace_more(limit=None)
-    df = pd.DataFrame(entry for comment in submission.comments.list() for entry in parse_comment_content(comment.body))
+    df = pd.DataFrame(_make_entry(comment, entry)
+                      for comment in submission.comments.list()
+                      for entry in parse_comment_content(comment.body)
+                      )
     return df
